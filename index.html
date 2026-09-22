@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corner Wall Poster Organizer</title>
+<style>
+  :root {
+    --bg-dark: #121316;
+    --panel-bg: #1c1e24;
+    --accent: #e5a93b;
+    --border: #2e323b;
+    --text: #eaeaea;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Control Sidebar */
+  #sidebar {
+    width: 320px;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 14px;
+    z-index: 10;
+  }
+  h2 { font-size: 1.1rem; color: var(--accent); }
+  .counter-box {
+    background: #15171c;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .counter-box span { font-weight: bold; color: #fff; }
+  .btn-row { display: flex; gap: 8px; }
+  button, label.upload-btn {
+    background: #2a2e39;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.2s;
+  }
+  button:hover, label.upload-btn:hover { background: #383d4c; border-color: var(--accent); }
+  input[type="file"] { display: none; }
+
+  /* Workspace Viewport */
+  #viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #0d0e11;
+    perspective: 1200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 3D Corner Wall Container */
+  #corner-rig {
+    position: relative;
+    width: 1400px;
+    height: 800px;
+    transform-style: preserve-3d;
+    transform: rotateX(-5deg) rotateY(-20deg) scale(0.85);
+    transition: transform 0.1s ease-out;
+  }
+  .wall {
+    position: absolute;
+    top: 0;
+    width: 700px;
+    height: 800px;
+    background-color: #d8d3c5;
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,0,0,0.15);
+  }
+  #left-wall {
+    left: 0;
+    transform-origin: right center;
+    transform: rotateY(45deg);
+    background-image: linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.4));
+  }
+  #right-wall {
+    left: 700px;
+    transform-origin: left center;
+    transform: rotateY(-45deg);
+    background-image: linear-gradient(to left, rgba(0,0,0,0.05), rgba(0,0,0,0.3));
+  }
+  .crease-shadow {
+    position: absolute;
+    width: 40px;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+  #left-wall .crease-shadow { right: 0; background: linear-gradient(to right, transparent, rgba(0,0,0,0.4)); }
+  #right-wall .crease-shadow { left: 0; background: linear-gradient(to left, transparent, rgba(0,0,0,0.4)); }
+
+  /* Draggable Poster Element */
+  .poster {
+    position: absolute;
+    background: #fff;
+    box-shadow: 2px 4px 10px rgba(0,0,0,0.35);
+    cursor: grab;
+    transform-origin: center center;
+    overflow: visible;
+  }
+  .poster:active { cursor: grabbing; z-index: 100 !important; }
+  .poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+  /* Washi tape visual detail */
+  .poster::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px;
+    height: 14px;
+    background: rgba(230, 210, 170, 0.7);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    z-index: 5;
+  }
+
+  /* Aspect Ratio Scale: 1mm ~ 0.85px */
+  /* A4: 210 x 297mm -> 178 x 252px | A5: 148 x 210mm -> 126 x 178px */
+  .sz-a4-portrait { width: 178px; height: 252px; }
+  .sz-a4-landscape { width: 252px; height: 178px; }
+  .sz-a5-portrait { width: 126px; height: 178px; }
+  .sz-a5-landscape { width: 178px; height: 126px; }
+
+  /* Context Menu */
+  #context-menu {
+    display: none;
+    position: fixed;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 0;
+    z-index: 1000;
+  }
+  #context-menu div {
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  #context-menu div:hover { background: var(--accent); color: #000; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h2>Corner Organiser</h2>
+  <div class="counter-box">
+    <div>Total Sheets: <span>14 A4</span></div>
+    <div>Big (A4): <span id="cnt-a4">0</span> / 4 max</div>
+    <div>Small (A5): <span id="cnt-a5">0</span> / 20 max</div>
+  </div>
+
+  <div class="btn-row">
+    <label class="upload-btn" style="flex:1;">
+      Custom Wall Photo
+      <input type="file" id="wall-uploader" accept="image/*">
+    </label>
+  </div>
+
+  <div class="btn-row">
+    <label class="upload-btn" style="flex:1;">
+      + Add Images
+      <input type="file" id="poster-uploader" accept="image/*" multiple>
+    </label>
+  </div>
+
+  <p style="font-size: 0.75rem; color: #8c93a0; line-height: 1.4;">
+    • <b>Drag</b> posters anywhere across walls.<br>
+    • <b>Right-click</b> a poster to toggle size (A4 / A5) or rotate orientation (Portrait / Landscape).<br>
+    • <b>Drag viewport background</b> to adjust camera view angle.
+  </p>
+</div>
+
+<div id="viewport">
+  <div id="corner-rig">
+    <div id="left-wall" class="wall">
+      <div class="crease-shadow"></div>
+    </div>
+    <div id="right-wall" class="wall">
+      <div class="crease-shadow"></div>
+    </div>
+  </div>
+</div>
+
+<div id="context-menu">
+  <div id="cm-toggle-size">Toggle Big (A4) / Small (A5)</div>
+  <div id="cm-rotate">Switch Portrait / Landscape</div>
+  <div id="cm-delete" style="color: #ff6b6b;">Delete</div>
+</div>
+
+<script>
+  let activeElement = null;
+  let activeMenuPoster = null;
+  let offset = { x: 0, y: 0 };
+  let camera = { rotX: -5, rotY: -20, isPanning: false, startX: 0, startY: 0 };
+
+  const leftWall = document.getElementById('left-wall');
+  const rightWall = document.getElementById('right-wall');
+  const cornerRig = document.getElementById('corner-rig');
+  const viewport = document.getElementById('viewport');
+  const contextMenu = document.getElementById('context-menu');
+
+  // Wall Background Loader
+  document.getElementById('wall-uploader').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      leftWall.style.backgroundImage = `url(${url})`;
+      rightWall.style.backgroundImage = `url(${url})`;
+    }
+  });
+
+  // Poster Image Adder
+  document.getElementById('poster-uploader').addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach((file) => {
+      const imgUrl = URL.createObjectURL(file);
+      createPoster(imgUrl);
+    });
+  });
+
+  function createPoster(src) {
+    const el = document.createElement('div');
+    el.className = 'poster sz-a5-portrait';
+    el.dataset.size = 'a5';
+    el.dataset.orientation = 'portrait';
+    
+    const img = document.createElement('img');
+    img.src = src;
+    el.appendChild(img);
+
+    // Initial drop on right wall
+    el.style.left = '60px';
+    el.style.top = '60px';
+    rightWall.appendChild(el);
+
+    initDrag(el);
+    updateCounts();
+  }
+
+  function initDrag(el) {
+    el.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      activeElement = el;
+      const rect = el.getBoundingClientRect();
+      offset.x = e.clientX - rect.left;
+      offset.y = e.clientY - rect.top;
+      e.stopPropagation();
+    });
+
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      activeMenuPoster = el;
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = `${e.clientX}px`;
+      contextMenu.style.top = `${e.clientY}px`;
+    });
+  }
+
+  // Viewport Orbit Dragging
+  viewport.addEventListener('mousedown', (e) => {
+    if (e.button === 0) {
+      camera.isPanning = true;
+      camera.startX = e.clientX;
+      camera.startY = e.clientY;
+      contextMenu.style.display = 'none';
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (activeElement) {
+      const parentWall = activeElement.parentElement;
+      const wallRect = parentWall.getBoundingClientRect();
+      
+      // Calculate local coordinates inside current wall
+      let nx = e.clientX - wallRect.left - offset.x;
+      let ny = e.clientY - wallRect.top - offset.y;
+
+      activeElement.style.left = `${nx}px`;
+      activeElement.style.top = `${ny}px`;
+
+      // Bridge posters smoothly between walls across corner
+      if (parentWall.id === 'left-wall' && nx > 650) {
+        rightWall.appendChild(activeElement);
+        activeElement.style.left = '10px';
+      } else if (parentWall.id === 'right-wall' && nx < -40) {
+        leftWall.appendChild(activeElement);
+        activeElement.style.left = '520px';
+      }
+    } else if (camera.isPanning) {
+      const dx = e.clientX - camera.startX;
+      const dy = e.clientY - camera.startY;
+      camera.rotY += dx * 0.1;
+      camera.rotX -= dy * 0.1;
+      cornerRig.style.transform = `rotateX(${camera.rotX}deg) rotateY(${camera.rotY}deg) scale(0.85)`;
+      camera.startX = e.clientX;
+      camera.startY = e.clientY;
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    activeElement = null;
+    camera.isPanning = false;
+  });
+
+  // Context Menu Actions
+  document.getElementById('cm-toggle-size').addEventListener('click', () => {
+    if (!activeMenuPoster) return;
+    const curSize = activeMenuPoster.dataset.size;
+    const curOri = activeMenuPoster.dataset.orientation;
+    const nextSize = curSize === 'a4' ? 'a5' : 'a4';
+    
+    activeMenuPoster.dataset.size = nextSize;
+    activeMenuPoster.className = `poster sz-${nextSize}-${curOri}`;
+    contextMenu.style.display = 'none';
+    updateCounts();
+  });
+
+  document.getElementById('cm-rotate').addEventListener('click', () => {
+    if (!activeMenuPoster) return;
+    const curSize = activeMenuPoster.dataset.size;
+    const curOri = activeMenuPoster.dataset.orientation;
+    const nextOri = curOri === 'portrait' ? 'landscape' : 'portrait';
+    
+    activeMenuPoster.dataset.orientation = nextOri;
+    activeMenuPoster.className = `poster sz-${curSize}-${nextOri}`;
+    contextMenu.style.display = 'none';
+  });
+
+  document.getElementById('cm-delete').addEventListener('click', () => {
+    if (activeMenuPoster) {
+      activeMenuPoster.remove();
+      contextMenu.style.display = 'none';
+      updateCounts();
+    }
+  });
+
+  window.addEventListener('click', () => {
+    contextMenu.style.display = 'none';
+  });
+
+  function updateCounts() {
+    const a4s = document.querySelectorAll('.poster[data-size="a4"]').length;
+    const a5s = document.querySelectorAll('.poster[data-size="a5"]').length;
+    
+    const a4Label = document.getElementById('cnt-a4');
+    const a5Label = document.getElementById('cnt-a5');
+    
+    a4Label.textContent = a4s;
+    a5Label.textContent = a5s;
+    
+    a4Label.style.color = a4s > 4 ? '#ff5252' : '#fff';
+    a5Label.style.color = a5s > 20 ? '#ff5252' : '#fff';
+  }
+</script>
+</body>
+</html>
