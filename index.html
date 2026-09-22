@@ -149,21 +149,27 @@
       z-index: 5;
     }
 
-    /* Preset Layout Grid Blueprint (Tight Corner Collage) */
-    .poster-slot {
-      position: absolute;
-      border: 2px dashed rgba(60, 60, 60, 0.35);
-      background: rgba(255, 255, 255, 0.2);
-      box-sizing: border-box;
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: rgba(0, 0, 0, 0.45);
-      letter-spacing: 0.5px;
-    }
+    /* Preset Layout Grid Blueprint (Snap Target Slots) */
+        .poster-slot {
+          position: absolute;
+          border: 2px dashed rgba(60, 60, 60, 0.45);
+          background: rgba(255, 255, 255, 0.22);
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          color: rgba(0, 0, 0, 0.5);
+          letter-spacing: 0.5px;
+          z-index: 4;
+          pointer-events: none;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .poster-slot.highlight {
+          border-color: #e5a93b;
+          background: rgba(229, 169, 59, 0.35);
+        }
 
     /* Strict Standard Aspect Ratio Dimensions */
       /* A4 full sheet: 150px x 212px */
@@ -194,32 +200,40 @@
 <body>
 
 <div id="sidebar">
-  <h2>Corner Organiser</h2>
-  <div class="counter-box">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>Corner Organiser</h2>
+    <button id="toggle-panel" style="padding:4px 8px; font-size:0.75rem;">Hide</button>
+  </div>
+  <div id="sidebar-content" style="display:flex; flex-direction:column; gap:8px;">
+    <div class="counter-box">
       <div>Total Paper: <span>14 A4 Sheets</span></div>
       <div>A4 Full: <span id="cnt-a4">0</span> / 4 max</div>
       <div>A4 Half: <span id="cnt-a5">0</span> / 20 max</div>
     </div>
 
-  <div class="btn-row">
-    <label class="upload-btn" style="flex:1;">
-      Custom Wall Photo
-      <input type="file" id="wall-uploader" accept="image/*">
-    </label>
-  </div>
+    <div class="btn-row">
+      <label class="upload-btn" style="flex:1;">
+        Wall Photo
+        <input type="file" id="wall-uploader" accept="image/*">
+      </label>
+      <label class="upload-btn" style="flex:1;">
+        + Images
+        <input type="file" id="poster-uploader" accept="image/*" multiple>
+      </label>
+    </div>
 
-  <div class="btn-row">
-    <label class="upload-btn" style="flex:1;">
-      + Add Images
-      <input type="file" id="poster-uploader" accept="image/*" multiple>
-    </label>
-  </div>
+    <div class="btn-row">
+      <button id="btn-zoom-in" style="flex:1;">🔍 +</button>
+      <button id="btn-zoom-out" style="flex:1;">🔍 -</button>
+      <button id="btn-reset-view" style="flex:1.2;">Reset</button>
+    </div>
 
-  <p style="font-size: 0.75rem; color: #8c93a0; line-height: 1.4;">
-    • <b>Drag</b> posters anywhere across walls.<br>
-    • <b>Right-click</b> a poster to toggle size (A4 / A5) or rotate orientation (Portrait / Landscape).<br>
-    • <b>Drag viewport background</b> to adjust camera view angle.
-  </p>
+    <p style="font-size: 0.72rem; color: #8c93a0; line-height: 1.3;">
+      • <b>Pinch</b> / <b>Wheel</b> to zoom.<br>
+      • <b>2-finger drag</b> / <b>Right-drag</b> to pan walls.<br>
+      • <b>1-finger / Left-drag</b> posters to move or tap-hold to edit.
+    </p>
+  </div>
 </div>
 
 <div id="viewport">
@@ -253,15 +267,59 @@
 
 <script>
   let activeElement = null;
-  let activeMenuPoster = null;
-  let offset = { x: 0, y: 0 };
-  let camera = { rotX: -5, rotY: -20, isPanning: false, startX: 0, startY: 0 };
+    let activeMenuPoster = null;
+    let holdTimer = null;
+    let camera = {
+      rotX: 0,
+      rotY: -15,
+      panX: 0,
+      panY: 0,
+      zoom: 0.9,
+      mode: 'none',
+      startX: 0,
+      startY: 0,
+      startPanX: 0,
+      startPanY: 0,
+      pinchDist: 0,
+      startZoom: 1
+    };
 
-  const leftWall = document.getElementById('left-wall');
-  const rightWall = document.getElementById('right-wall');
-  const cornerRig = document.getElementById('corner-rig');
-  const viewport = document.getElementById('viewport');
-  const contextMenu = document.getElementById('context-menu');
+    const leftWall = document.getElementById('left-wall');
+      const rightWall = document.getElementById('right-wall');
+      const cornerRig = document.getElementById('corner-rig');
+      const viewport = document.getElementById('viewport');
+      const contextMenu = document.getElementById('context-menu');
+
+      function updateTransform() {
+        cornerRig.style.transform = `translate(${camera.panX}px, ${camera.panY}px) scale(${camera.zoom}) rotateX(${camera.rotX}deg) rotateY(${camera.rotY}deg)`;
+      }
+
+      
+
+    // Minimize Sidebar on small screens
+    document.getElementById('toggle-panel').addEventListener('click', (e) => {
+      const sc = document.getElementById('sidebar-content');
+      const isHidden = sc.style.display === 'none';
+      sc.style.display = isHidden ? 'flex' : 'none';
+      e.target.textContent = isHidden ? 'Hide' : 'Show';
+    });
+
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+      camera.zoom = Math.min(camera.zoom + 0.15, 2.5);
+      updateTransform();
+    });
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+      camera.zoom = Math.max(camera.zoom - 0.15, 0.4);
+      updateTransform();
+    });
+    document.getElementById('btn-reset-view').addEventListener('click', () => {
+      camera.rotX = 0;
+      camera.rotY = -15;
+      camera.panX = 0;
+      camera.panY = 0;
+      camera.zoom = 0.9;
+      updateTransform();
+    });
 
   // Wall Background Loader
   document.getElementById('wall-uploader').addEventListener('change', (e) => {
@@ -313,83 +371,241 @@
     }
 
     function initDrag(el) {
-      const onStart = (e) => {
-        if (e.button !== undefined && e.button !== 0) return;
-        activeElement = el;
-        const p = getPointerPos(e);
-        const rect = el.getBoundingClientRect();
-        offset.x = p.clientX - rect.left;
-        offset.y = p.clientY - rect.top;
-        e.stopPropagation();
-      };
-
-      el.addEventListener('mousedown', onStart);
-      el.addEventListener('touchstart', onStart, { passive: false });
-
-      el.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        activeMenuPoster = el;
-        contextMenu.style.display = 'block';
-        contextMenu.style.left = `${e.clientX}px`;
-        contextMenu.style.top = `${e.clientY}px`;
-      });
-    }
-
-    // Viewport Orbit Dragging (Mouse & Touch)
-    const onPanStart = (e) => {
-      if (e.button !== undefined && e.button !== 0) return;
-      const p = getPointerPos(e);
-      camera.isPanning = true;
-      camera.startX = p.clientX;
-      camera.startY = p.clientY;
-      contextMenu.style.display = 'none';
-    };
-
-    viewport.addEventListener('mousedown', onPanStart);
-    viewport.addEventListener('touchstart', onPanStart, { passive: false });
-
-    const onMove = (e) => {
-      const p = getPointerPos(e);
-      if (activeElement) {
-        if (e.cancelable) e.preventDefault();
-        const parentWall = activeElement.parentElement;
-        const wallRect = parentWall.getBoundingClientRect();
+        const onStart = (e) => {
+          if (e.button !== undefined && e.button !== 0) return;
+          if (e.touches && e.touches.length > 1) return;
       
-        let nx = p.clientX - wallRect.left - offset.x;
-        let ny = p.clientY - wallRect.top - offset.y;
+          activeElement = el;
+          const p = getPointerPos(e);
+          const parentWall = el.parentElement;
+          const wallRect = parentWall.getBoundingClientRect();
 
-        activeElement.style.left = `${nx}px`;
-        activeElement.style.top = `${ny}px`;
+          // Invert 3D perspective scale calculation for 1:1 finger track
+          const curLeft = parseFloat(el.style.left) || 0;
+          const curTop = parseFloat(el.style.top) || 0;
+          const wallScaleX = wallRect.width / 500;
+          const wallScaleY = wallRect.height / 700;
 
-        // Seamless transfer across the 90° corner
-        if (parentWall.id === 'left-wall' && nx > 440) {
-          rightWall.appendChild(activeElement);
-          activeElement.style.left = '6px';
-        } else if (parentWall.id === 'right-wall' && nx < -20) {
-          leftWall.appendChild(activeElement);
-          activeElement.style.left = '360px';
+          el._dragOffsetX = (p.clientX - wallRect.left) / wallScaleX - curLeft;
+          el._dragOffsetY = (p.clientY - wallRect.top) / wallScaleY - curTop;
+
+          // Tap-and-hold context menu for mobile
+          if (e.touches) {
+            holdTimer = setTimeout(() => {
+              activeMenuPoster = el;
+              contextMenu.style.display = 'block';
+              contextMenu.style.left = `${Math.min(p.clientX, window.innerWidth - 180)}px`;
+              contextMenu.style.top = `${Math.min(p.clientY, window.innerHeight - 140)}px`;
+              activeElement = null;
+            }, 600);
+          }
+          e.stopPropagation();
+        };
+
+        el.addEventListener('mousedown', onStart);
+        el.addEventListener('touchstart', onStart, { passive: false });
+
+        el.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          activeMenuPoster = el;
+          contextMenu.style.display = 'block';
+          contextMenu.style.left = `${e.clientX}px`;
+          contextMenu.style.top = `${e.clientY}px`;
+        });
+      }
+
+      // Mouse wheel zoom
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 0.92 : 1.08;
+        camera.zoom = Math.min(Math.max(camera.zoom * factor, 0.4), 2.5);
+        updateTransform();
+      }, { passive: false });
+
+      // Viewport Orbit & Pan handlers
+      const onPanStart = (e) => {
+        contextMenu.style.display = 'none';
+        if (e.touches && e.touches.length === 2) {
+          // 2-finger pinch & pan
+          camera.mode = 'pinch';
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          camera.pinchDist = Math.hypot(dx, dy);
+          camera.startZoom = camera.zoom;
+          camera.startX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+          camera.startY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          camera.startPanX = camera.panX;
+          camera.startPanY = camera.panY;
+          return;
         }
-      } else if (camera.isPanning) {
-        const dx = p.clientX - camera.startX;
-        const dy = p.clientY - camera.startY;
-        camera.rotY += dx * 0.15;
-        camera.rotX -= dy * 0.15;
-        cornerRig.style.transform = `rotateX(${camera.rotX}deg) rotateY(${camera.rotY}deg) scale(0.9)`;
+
+        const p = getPointerPos(e);
         camera.startX = p.clientX;
         camera.startY = p.clientY;
-      }
-    };
+        camera.startPanX = camera.panX;
+        camera.startPanY = camera.panY;
+        camera.mode = (e.button === 2) ? 'pan' : 'rotate';
+      };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('touchmove', onMove, { passive: false });
+      viewport.addEventListener('mousedown', onPanStart);
+      viewport.addEventListener('touchstart', onPanStart, { passive: false });
 
-    const onEnd = () => {
-      activeElement = null;
-      camera.isPanning = false;
-    };
+      const onMove = (e) => {
+        if (holdTimer) {
+          clearTimeout(holdTimer);
+          holdTimer = null;
+        }
 
-    window.addEventListener('mouseup', onEnd);
-    window.addEventListener('touchend', onEnd);
+        // Move Poster
+        if (activeElement) {
+          if (e.cancelable) e.preventDefault();
+          const p = getPointerPos(e);
+          const parentWall = activeElement.parentElement;
+          const wallRect = parentWall.getBoundingClientRect();
+          const wallScaleX = wallRect.width / 500;
+          const wallScaleY = wallRect.height / 700;
+
+          let nx = (p.clientX - wallRect.left) / wallScaleX - activeElement._dragOffsetX;
+          let ny = (p.clientY - wallRect.top) / wallScaleY - activeElement._dragOffsetY;
+
+          activeElement.style.left = `${Math.round(nx)}px`;
+          activeElement.style.top = `${Math.round(ny)}px`;
+
+          // Seamless corner hopping
+          if (parentWall.id === 'left-wall' && nx > 440) {
+            rightWall.appendChild(activeElement);
+            activeElement.style.left = '4px';
+          } else if (parentWall.id === 'right-wall' && nx < -30) {
+            leftWall.appendChild(activeElement);
+            activeElement.style.left = '370px';
+          }
+          return;
+        }
+
+        // Viewport Nav: 2-finger pinch/pan
+        if (camera.mode === 'pinch' && e.touches && e.touches.length === 2) {
+          if (e.cancelable) e.preventDefault();
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const curDist = Math.hypot(dx, dy);
+          camera.zoom = Math.min(Math.max(camera.startZoom * (curDist / camera.pinchDist), 0.4), 2.5);
+
+          const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+          const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          camera.panX = camera.startPanX + (midX - camera.startX);
+          camera.panY = camera.startPanY + (midY - camera.startY);
+          updateTransform();
+          return;
+        }
+
+        // Viewport Nav: Rotate or Pan
+        if (camera.mode === 'rotate') {
+          const p = getPointerPos(e);
+          camera.rotY += (p.clientX - camera.startX) * 0.18;
+          camera.rotX -= (p.clientY - camera.startY) * 0.18;
+          camera.rotX = Math.max(-45, Math.min(45, camera.rotX));
+          camera.startX = p.clientX;
+          camera.startY = p.clientY;
+          updateTransform();
+        } else if (camera.mode === 'pan') {
+          const p = getPointerPos(e);
+          camera.panX = camera.startPanX + (p.clientX - camera.startX);
+          camera.panY = camera.startPanY + (p.clientY - camera.startY);
+          updateTransform();
+        }
+      };
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+
+      function getOverlappingSlot(posterEl) {
+          const pRect = posterEl.getBoundingClientRect();
+          const pCenterX = pRect.left + pRect.width / 2;
+          const pCenterY = pRect.top + pRect.height / 2;
+
+          const slots = Array.from(document.querySelectorAll('.poster-slot'));
+          for (const slot of slots) {
+            const sRect = slot.getBoundingClientRect();
+            if (
+              pCenterX >= sRect.left &&
+              pCenterX <= sRect.right &&
+              pCenterY >= sRect.top &&
+              pCenterY <= sRect.bottom
+            ) {
+              return slot;
+            }
+          }
+          return null;
+        }
+
+        function getPosterOccupyingSlot(slot, excludePoster) {
+          const posters = Array.from(document.querySelectorAll('.poster'));
+          const sRect = slot.getBoundingClientRect();
+          const sCenterX = sRect.left + sRect.width / 2;
+          const sCenterY = sRect.top + sRect.height / 2;
+
+          for (const p of posters) {
+            if (p === excludePoster) continue;
+            const pRect = p.getBoundingClientRect();
+            if (
+              sCenterX >= pRect.left &&
+              sCenterX <= pRect.right &&
+              sCenterY >= pRect.top &&
+              sCenterY <= pRect.bottom
+            ) {
+              return p;
+            }
+          }
+          return null;
+        }
+
+        function snapPosterToSlot(posterEl, targetSlot) {
+          const parentWall = targetSlot.parentElement;
+          parentWall.appendChild(posterEl);
+          posterEl.style.left = targetSlot.style.left || `${targetSlot.offsetLeft}px`;
+          posterEl.style.top = targetSlot.style.top || `${targetSlot.offsetTop}px`;
+
+          // Match aspect ratio and orientation of target slot
+          const isA4 = targetSlot.classList.contains('sz-a4-portrait') || targetSlot.classList.contains('sz-a4-landscape');
+          const isLandscape = targetSlot.classList.contains('sz-a4-landscape') || targetSlot.classList.contains('sz-a5-landscape');
+          const sizeStr = isA4 ? 'a4' : 'a5';
+          const oriStr = isLandscape ? 'landscape' : 'portrait';
+
+          posterEl.dataset.size = sizeStr;
+          posterEl.dataset.orientation = oriStr;
+          posterEl.className = `poster sz-${sizeStr}-${oriStr}`;
+          updateCounts();
+        }
+
+        const onEnd = () => {
+          if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+          }
+
+          if (activeElement) {
+            const dropSlot = getOverlappingSlot(activeElement);
+            if (dropSlot) {
+              const existingOccupant = getPosterOccupyingSlot(dropSlot, activeElement);
+
+              if (existingOccupant && activeElement._originalSlot) {
+                // SWAP / REPLACE: Swap places between both posters
+                snapPosterToSlot(existingOccupant, activeElement._originalSlot);
+                snapPosterToSlot(activeElement, dropSlot);
+              } else {
+                // Snap into free slot
+                snapPosterToSlot(activeElement, dropSlot);
+              }
+            }
+            document.querySelectorAll('.poster-slot').forEach(s => s.classList.remove('highlight'));
+          }
+
+          activeElement = null;
+          camera.mode = 'none';
+        };
+
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchend', onEnd);
 
   // Context Menu Actions
   document.getElementById('cm-toggle-size').addEventListener('click', () => {
