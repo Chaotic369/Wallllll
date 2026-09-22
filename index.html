@@ -24,22 +24,19 @@
 
   /* Control Sidebar */
     #sidebar {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      width: 280px;
-      max-height: calc(100vh - 32px);
-      background: rgba(28, 30, 36, 0.88);
-      backdrop-filter: blur(10px);
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 260px;
+      background: rgba(28, 30, 36, 0.92);
       border: 1px solid var(--border);
       border-radius: 8px;
       display: flex;
       flex-direction: column;
-      padding: 16px;
-      gap: 12px;
-      z-index: 20;
-      overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      padding: 12px;
+      gap: 8px;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
     }
   h2 { font-size: 1.1rem; color: var(--accent); }
   .counter-box {
@@ -81,87 +78,98 @@
   }
 
   /* 3D Corner Wall Container */
-  #corner-rig {
-    position: relative;
-    width: 1400px;
-    height: 800px;
-    transform-style: preserve-3d;
-    transform: rotateX(-5deg) rotateY(-20deg) scale(0.85);
-    transition: transform 0.1s ease-out;
-  }
-  .wall {
+    #corner-rig {
+      position: relative;
+      width: 1000px;
+      height: 700px;
+      transform-style: preserve-3d;
+      transform: rotateX(0deg) rotateY(-18deg) scale(0.9);
+      touch-action: none;
+    }
+    .wall {
       position: absolute;
       top: 0;
-      width: 700px;
-      height: 800px;
-      background-color: #f7f3e8;
-      background-image: 
-        linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
-      background-size: 15px 15px;
+      width: 500px;
+      height: 700px;
+      background-color: #f6f3ee;
+      background-size: cover;
       background-position: center;
-      box-shadow: inset 0 0 100px rgba(0,0,0,0.3);
-      border: 1px solid rgba(0,0,0,0.15);
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.12);
     }
-  #left-wall {
-    left: 0;
-    transform-origin: right center;
-    transform: rotateY(45deg);
-    background-image: linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.4));
-  }
-  #right-wall {
-    left: 700px;
-    transform-origin: left center;
-    transform: rotateY(-45deg);
-    background-image: linear-gradient(to left, rgba(0,0,0,0.05), rgba(0,0,0,0.3));
-  }
-  .crease-shadow {
-    position: absolute;
-    width: 40px;
-    height: 100%;
-    z-index: 2;
-    pointer-events: none;
-  }
-  #left-wall .crease-shadow { right: 0; background: linear-gradient(to right, transparent, rgba(0,0,0,0.4)); }
-  #right-wall .crease-shadow { left: 0; background: linear-gradient(to left, transparent, rgba(0,0,0,0.4)); }
+    #left-wall {
+      left: 0;
+      transform-origin: right center;
+      transform: rotateY(38deg);
+      border-right: 2px solid rgba(0,0,0,0.2);
+    }
+    #right-wall {
+      left: 500px;
+      transform-origin: left center;
+      transform: rotateY(-38deg);
+    }
+    .crease-shadow {
+      position: absolute;
+      width: 60px;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+    #left-wall .crease-shadow { right: 0; background: linear-gradient(to right, transparent, rgba(0,0,0,0.22)); }
+    #right-wall .crease-shadow { left: 0; background: linear-gradient(to left, rgba(0,0,0,0.18), transparent); }
 
-  /* Draggable Poster Element */
-  .poster {
-    position: absolute;
-    background: #fff;
-    box-shadow: 2px 4px 10px rgba(0,0,0,0.35);
-    cursor: grab;
-    transform-origin: center center;
-    overflow: visible;
-  }
-  .poster:active { cursor: grabbing; z-index: 100 !important; }
-  .poster img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    pointer-events: none;
-  }
-  /* Washi tape visual detail */
-  .poster::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 38px;
-    height: 14px;
-    background: rgba(230, 210, 170, 0.7);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    z-index: 5;
-  }
+    /* Draggable Poster Element */
+    .poster {
+      position: absolute;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      cursor: grab;
+      transform-origin: center center;
+      z-index: 10;
+      touch-action: none;
+    }
+    .poster:active { cursor: grabbing; z-index: 100 !important; }
+    .poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    /* Corner tape */
+    .poster::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 24px;
+      height: 10px;
+      background: rgba(220, 200, 160, 0.85);
+      transform: rotate(45deg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      z-index: 5;
+    }
 
-  /* Aspect Ratio Scale: 1mm ~ 0.85px */
-  /* A4: 210 x 297mm -> 178 x 252px | A5: 148 x 210mm -> 126 x 178px */
-  .sz-a4-portrait { width: 178px; height: 252px; }
-  .sz-a4-landscape { width: 252px; height: 178px; }
-  .sz-a5-portrait { width: 126px; height: 178px; }
-  .sz-a5-landscape { width: 178px; height: 126px; }
+    /* Preset Layout Grid Blueprint (Tight Corner Collage) */
+    .poster-slot {
+      position: absolute;
+      border: 2px dashed rgba(60, 60, 60, 0.35);
+      background: rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(0, 0, 0, 0.45);
+      letter-spacing: 0.5px;
+    }
+
+    /* Scaled Poster Dimensions: A4 = 150x212px, A5 = 106x150px */
+    .sz-a4-portrait { width: 150px; height: 212px; }
+    .sz-a4-landscape { width: 212px; height: 150px; }
+    .sz-a5-portrait { width: 106px; height: 150px; }
+    .sz-a5-landscape { width: 150px; height: 106px; }
 
   /* Context Menu */
   #context-menu {
@@ -216,9 +224,21 @@
   <div id="corner-rig">
     <div id="left-wall" class="wall">
       <div class="crease-shadow"></div>
+      <div class="poster-slot sz-a4-portrait" style="right: 4px; top: 120px;">A4 #1</div>
+      <div class="poster-slot sz-a4-portrait" style="right: 4px; top: 340px;">A4 #2</div>
+      <div class="poster-slot sz-a5-portrait" style="right: 160px; top: 180px;">A5</div>
+      <div class="poster-slot sz-a5-portrait" style="right: 160px; top: 340px;">A5</div>
+      <div class="poster-slot sz-a5-portrait" style="right: 272px; top: 250px;">A5</div>
     </div>
     <div id="right-wall" class="wall">
       <div class="crease-shadow"></div>
+      <div class="poster-slot sz-a4-portrait" style="left: 4px; top: 80px;">A4 #3</div>
+      <div class="poster-slot sz-a4-portrait" style="left: 4px; top: 300px;">A4 #4</div>
+      <div class="poster-slot sz-a5-portrait" style="left: 160px; top: 140px;">A5</div>
+      <div class="poster-slot sz-a5-portrait" style="left: 160px; top: 300px;">A5</div>
+      <div class="poster-slot sz-a5-landscape" style="left: 160px; top: 458px;">A5 LAND</div>
+      <div class="poster-slot sz-a5-portrait" style="left: 272px; top: 200px;">A5</div>
+      <div class="poster-slot sz-a5-portrait" style="left: 272px; top: 358px;">A5</div>
     </div>
   </div>
 </div>
@@ -261,88 +281,110 @@
   });
 
   function createPoster(src) {
-    const el = document.createElement('div');
-    el.className = 'poster sz-a5-portrait';
-    el.dataset.size = 'a5';
-    el.dataset.orientation = 'portrait';
+      const el = document.createElement('div');
+      el.className = 'poster sz-a5-portrait';
+      el.dataset.size = 'a5';
+      el.dataset.orientation = 'portrait';
     
-    const img = document.createElement('img');
-    img.src = src;
-    el.appendChild(img);
+      const img = document.createElement('img');
+      img.src = src;
+      el.appendChild(img);
 
-    // Initial drop on right wall
-    el.style.left = '60px';
-    el.style.top = '60px';
-    rightWall.appendChild(el);
+      // Place newly dropped posters right next to the inner corner fold
+      const placed = document.querySelectorAll('.poster').length;
+      el.style.left = `${15 + ((placed * 16) % 180)}px`;
+      el.style.top = `${100 + ((placed * 24) % 360)}px`;
+      rightWall.appendChild(el);
 
-    initDrag(el);
-    updateCounts();
-  }
-
-  function initDrag(el) {
-    el.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
-      activeElement = el;
-      const rect = el.getBoundingClientRect();
-      offset.x = e.clientX - rect.left;
-      offset.y = e.clientY - rect.top;
-      e.stopPropagation();
-    });
-
-    el.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      activeMenuPoster = el;
-      contextMenu.style.display = 'block';
-      contextMenu.style.left = `${e.clientX}px`;
-      contextMenu.style.top = `${e.clientY}px`;
-    });
-  }
-
-  // Viewport Orbit Dragging
-  viewport.addEventListener('mousedown', (e) => {
-    if (e.button === 0) {
-      camera.isPanning = true;
-      camera.startX = e.clientX;
-      camera.startY = e.clientY;
-      contextMenu.style.display = 'none';
+      initDrag(el);
+      updateCounts();
     }
-  });
 
-  window.addEventListener('mousemove', (e) => {
-    if (activeElement) {
-      const parentWall = activeElement.parentElement;
-      const wallRect = parentWall.getBoundingClientRect();
-      
-      // Calculate local coordinates inside current wall
-      let nx = e.clientX - wallRect.left - offset.x;
-      let ny = e.clientY - wallRect.top - offset.y;
-
-      activeElement.style.left = `${nx}px`;
-      activeElement.style.top = `${ny}px`;
-
-      // Bridge posters smoothly between walls across corner
-      if (parentWall.id === 'left-wall' && nx > 650) {
-        rightWall.appendChild(activeElement);
-        activeElement.style.left = '10px';
-      } else if (parentWall.id === 'right-wall' && nx < -40) {
-        leftWall.appendChild(activeElement);
-        activeElement.style.left = '520px';
+    function getPointerPos(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
       }
-    } else if (camera.isPanning) {
-      const dx = e.clientX - camera.startX;
-      const dy = e.clientY - camera.startY;
-      camera.rotY += dx * 0.1;
-      camera.rotX -= dy * 0.1;
-      cornerRig.style.transform = `rotateX(${camera.rotX}deg) rotateY(${camera.rotY}deg) scale(0.85)`;
-      camera.startX = e.clientX;
-      camera.startY = e.clientY;
+      return { clientX: e.clientX, clientY: e.clientY };
     }
-  });
 
-  window.addEventListener('mouseup', () => {
-    activeElement = null;
-    camera.isPanning = false;
-  });
+    function initDrag(el) {
+      const onStart = (e) => {
+        if (e.button !== undefined && e.button !== 0) return;
+        activeElement = el;
+        const p = getPointerPos(e);
+        const rect = el.getBoundingClientRect();
+        offset.x = p.clientX - rect.left;
+        offset.y = p.clientY - rect.top;
+        e.stopPropagation();
+      };
+
+      el.addEventListener('mousedown', onStart);
+      el.addEventListener('touchstart', onStart, { passive: false });
+
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        activeMenuPoster = el;
+        contextMenu.style.display = 'block';
+        contextMenu.style.left = `${e.clientX}px`;
+        contextMenu.style.top = `${e.clientY}px`;
+      });
+    }
+
+    // Viewport Orbit Dragging (Mouse & Touch)
+    const onPanStart = (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      const p = getPointerPos(e);
+      camera.isPanning = true;
+      camera.startX = p.clientX;
+      camera.startY = p.clientY;
+      contextMenu.style.display = 'none';
+    };
+
+    viewport.addEventListener('mousedown', onPanStart);
+    viewport.addEventListener('touchstart', onPanStart, { passive: false });
+
+    const onMove = (e) => {
+      const p = getPointerPos(e);
+      if (activeElement) {
+        if (e.cancelable) e.preventDefault();
+        const parentWall = activeElement.parentElement;
+        const wallRect = parentWall.getBoundingClientRect();
+      
+        let nx = p.clientX - wallRect.left - offset.x;
+        let ny = p.clientY - wallRect.top - offset.y;
+
+        activeElement.style.left = `${nx}px`;
+        activeElement.style.top = `${ny}px`;
+
+        // Seamless transfer across the 90° corner
+        if (parentWall.id === 'left-wall' && nx > 440) {
+          rightWall.appendChild(activeElement);
+          activeElement.style.left = '6px';
+        } else if (parentWall.id === 'right-wall' && nx < -20) {
+          leftWall.appendChild(activeElement);
+          activeElement.style.left = '360px';
+        }
+      } else if (camera.isPanning) {
+        const dx = p.clientX - camera.startX;
+        const dy = p.clientY - camera.startY;
+        camera.rotY += dx * 0.15;
+        camera.rotX -= dy * 0.15;
+        cornerRig.style.transform = `rotateX(${camera.rotX}deg) rotateY(${camera.rotY}deg) scale(0.9)`;
+        camera.startX = p.clientX;
+        camera.startY = p.clientY;
+      }
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, { passive: false });
+
+    const onEnd = () => {
+      activeElement = null;
+      camera.isPanning = false;
+    };
+
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchend', onEnd);
 
   // Context Menu Actions
   document.getElementById('cm-toggle-size').addEventListener('click', () => {
